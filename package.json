@@ -1,0 +1,17 @@
+{
+  "name": "auto-pay",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/core": "^3.5.1",
+    "axios": "^0.21.1",
+    "github-api": "^3.4.0"
+  }
+}
