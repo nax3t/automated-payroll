@@ -28,7 +28,7 @@ const axios = require('axios');
         // const { data } = await octokit.request('GET /issues');
         const { data } = await axios.get('https://api.github.com/repos/thenewboston-developers/Contributor-Payments/issues?state=open&labels=Timesheet,%F0%9F%93%9D%20Ready%20for%20Review%F0%9F%93%9D');
         for(const issue of data) {
-            const { body, number, title, user } = issue;
+            const { body, number, title, user, url } = issue;
             // parse recipient account number
             const recipient = body.match(/[a-z0-9]{64}/) ? body.match(/[a-z0-9]{64}/)[0] : false;
             let totalTimeSpent = body.match(/total time spent\r\n\d+\.*\.?5? hour/i) ? body.match(/total time spent\r\n\d+\.*\.?5? hour/i)[0] : false;
@@ -56,7 +56,8 @@ const axios = require('axios');
                     recipient,
                 });
             } else {
-                console.log('Missing data for:', title, {
+                console.log('--------------------------');
+                console.log(`Missing data for: ${title}\n${url}\nTransaction Object:`, {
                     amount,
                     memo,
                     recipient,
