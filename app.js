@@ -28,11 +28,17 @@ const axios = require('axios');
         // const { data } = await octokit.request('GET /issues');
         const { data } = await axios.get('https://api.github.com/repos/thenewboston-developers/Contributor-Payments/issues?state=open&labels=Timesheet,%F0%9F%93%9D%20Ready%20for%20Review%F0%9F%93%9D');
         for(const issue of data) {
-            const { body, number, title, user, url } = issue;
+            const { body, number, title, user, html_url } = issue;
             // parse recipient account number
             const recipient = body.match(/[a-z0-9]{64}/) ? body.match(/[a-z0-9]{64}/)[0] : false;
-            let totalTimeSpent = body.match(/total time spent\r\n\d+\.*\.?5? hour/i) ? body.match(/total time spent\r\n\d+\.*\.?5? hour/i)[0] : false;
-            totalTimeSpent = totalTimeSpent ? totalTimeSpent.match(/\d+\.*\.?5?/)[0] : false;
+            // Find number of hours that come after Total Time Spent
+            let totalTimeSpent = body.match(/total time spent\r\n\.?\d+\.?(0|5)? hour/i) ? body.match(/total time spent\r\n\.?\d+\.?(0|5)? hour/i)[0] : 0;
+            // If totalTimeSpent doesn't exist then check again, but use Time Spent instead of Total Time Spent and pull last one in the array
+            if (!totalTimeSpent) {
+                const timeSpent = body.match(/time spent\r\n\.?\d+\.?(0|5)? hour/i);
+                totalTimeSpent = timeSpent && timeSpent.input ? timeSpent[0] : timeSpent && timeSpent.length > 1 ? timeSpent[timeSpent.length-1] : 0;
+            }
+            totalTimeSpent = totalTimeSpent ? totalTimeSpent.match(/\d+\.?(0|5)?/)[0] : 0;
             // pull username and match from teamMembers to pull hourly rate
             const member = teamMembers.find(member => {
                 if (member.user.github_username === user.login ||
@@ -56,12 +62,12 @@ const axios = require('axios');
                     recipient,
                 });
             } else {
-                console.log('--------------------------');
-                console.log(`Missing data for: ${title}\n${url}\nTransaction Object:`, {
+                console.log(`Missing data for: ${title}\n${html_url}\nTransaction Object:`, {
                     amount,
                     memo,
                     recipient,
                 });
+                console.log('--------------------------');
             }
         }
         console.log('Transaction Data for Bulk Payment:', txs);
