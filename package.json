@@ -13,5 +13,8 @@
     "@octokit/core": "^3.5.1",
     "axios": "^0.21.1",
     "github-api": "^3.4.0"
+  },
+  "devDependencies": {
+    "dotenv": "^10.0.0"
   }
 }

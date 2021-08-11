@@ -15,11 +15,12 @@
 - [x] Generate appropriate memo for each payment based on standard memo format
 - [ ] Print payment sheet. Highlight those issues with more than 10000TNBC to be sent at once.
 - [ ] Payer will run the pay command after reviewing the payment sheet.
+    - [ ] Use either a mailer notification or create a new github issue for these kinds of manual verification payments
 - [ ] Payment by the script:
 - [ ] Send coins to the contributor
 - [ ] Confirm transaction is successful
-- [ ] Add Paid label to the issue
-- [ ] Remove Ready to pay label to the issue
-- [ ] Close the issue
+- [x] Add Paid label to the issue
+- [x] Remove Ready to pay label to the issue
+- [x] Close the issue
 - [ ] Print all successful and failed payments
 - [ ] Use agenda js to create a background job that runs the script daily on a production server
