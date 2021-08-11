@@ -2,8 +2,9 @@
 
 ### Script Notes:
 - The script will automatically pull up all the issues from thenewboston-github repositories, where payments need to do, with the Ready to pay label added to them and in the open state.
-    - [ ] Step needed to check that label added by correct user
-    - [ ] Need to update the label being used in the code to pull in issues from the API
+    - [X] Check that 'Ready to pay' label added by correct user
+    - [ ] Update id being used for 'Ready to pay' label user check
+    - [X] Need to update the labels being used in the code to pull in Ready to Pay Timesheet issues from the API
 - Collect this info from issues and core members API:
     - [x] Contributor account address
     - [x] Hourly Rate
@@ -21,3 +22,4 @@
 - [ ] Remove Ready to pay label to the issue
 - [ ] Close the issue
 - [ ] Print all successful and failed payments
+- [ ] Use agenda js to create a background job that runs the script daily on a production server

@@ -26,9 +26,21 @@ const axios = require('axios');
         // initialize empty array for bank transactions
         const txs = [];
         // const { data } = await octokit.request('GET /issues');
-        const { data } = await axios.get('https://api.github.com/repos/thenewboston-developers/Contributor-Payments/issues?state=open&labels=Timesheet,%F0%9F%93%9D%20Ready%20for%20Review%F0%9F%93%9D');
+        // const { data } = await axios.get('https://api.github.com/repos/thenewboston-developers/Contributor-Payments/issues?state=open&labels=Timesheet,%F0%9F%93%9D%20Ready%20for%20Review%F0%9F%93%9D');
+
+        // get all issues that are labeled as Timesheets and Ready to pay
+        const { data } = await axios.get('https://api.github.com/repos/nax3t/test-timesheets/issues?state=open&labels=Timesheet,Ready%20to%20pay');
         for(const issue of data) {
-            const { body, number, title, user, html_url } = issue;
+            // destructure needed properties from issue object
+            const { body, number, title, user, html_url, events_url } = issue;
+            // check if Ready to pay label added by correct user
+            const { data } = await axios.get(events_url);
+            const isValidLabel = data.find(action => action.label.name === 'Ready for payment' && action.actor.id === 6356890);
+            // if label not added by correct user then skip to next issue
+            if (!isValidLabel) {
+                console.log(`Invalid label creator for ${title}, skipping to next timesheet.`);
+                continue;
+            }
             // parse recipient account number
             const recipient = body.match(/[a-z0-9]{64}/) ? body.match(/[a-z0-9]{64}/)[0] : false;
             // Find number of hours that come after Total Time Spent
