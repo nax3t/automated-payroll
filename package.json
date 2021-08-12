@@ -12,7 +12,8 @@
   "dependencies": {
     "@octokit/core": "^3.5.1",
     "axios": "^0.21.1",
-    "github-api": "^3.4.0"
+    "github-api": "^3.4.0",
+    "thenewboston": "^1.1.0-alpha.4"
   },
   "devDependencies": {
     "dotenv": "^10.0.0"

@@ -17,7 +17,7 @@
 - [ ] Payer will run the pay command after reviewing the payment sheet.
     - [ ] Use either a mailer notification or create a new github issue for these kinds of manual verification payments
 - [ ] Payment by the script:
-- [ ] Send coins to the contributor
+- [x] Send coins to the contributor
 - [ ] Confirm transaction is successful
 - [x] Add Paid label to the issue
 - [x] Remove Ready to pay label to the issue

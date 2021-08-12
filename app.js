@@ -5,22 +5,22 @@ const octokit = new Octokit({
   auth: process.env.GH_AUTH_TOKEN,
 });
 const axios = require('axios');
-// const sendersAccount = new Account("fakeSigningKey");
-// const bankUrl = "http://18.218.193.164";
-
-// const paymentHandlerOptions = {
-//   account: sendersAccount,
-//   bankUrl: bankUrl,
-// };
-
-// const paymentHandler = new tnb.AccountPaymentHandler(paymentHandlerOptions);
-
-// // This is very important.
-// // Method for getting the Bank and Primary validator Transactions fees
-// await paymentHandler.init();
+const tnb = require('thenewboston');
+const { Account } = tnb;
 
 (async () => {
     try {
+        // prepare senders account
+        const sendersAccount = new Account(process.env.SIGNING_KEY);
+        const bankUrl = 'http://45.33.60.42';
+        const paymentHandlerOptions = {
+            account: sendersAccount,
+            bankUrl: bankUrl,
+        };
+        const paymentHandler = new tnb.AccountPaymentHandler(paymentHandlerOptions);
+        // // This is very important.
+        // // Method for getting the Bank and Primary validator Transactions fees
+        await paymentHandler.init();
         // get core-team data
         const response = await axios.get('https://api.thenewboston.com/core_members');
         const teamMembers = response.data.results;
@@ -38,10 +38,15 @@ const axios = require('axios');
             const { body, number, title, user, html_url, events_url } = issue;
             // check if Ready to pay label added by correct user
             const { data } = await axios.get(events_url);
-            const isValidLabel = data.find(action => action.label.name === 'Ready for payment' && action.actor.id === 6356890);
+            const isValidLabel = data.find(action => 
+                action.label &&
+                action.label.name === 'Ready to pay' &&
+                action.actor.id === 6356890
+            );
             // if label not added by correct user then skip to next issue
             if (!isValidLabel) {
                 console.log(`Invalid label creator for ${title}, skipping to next timesheet.`);
+                console.log(events_url);
                 continue;
             }
             // parse recipient account number
@@ -73,33 +78,35 @@ const axios = require('axios');
             // if (amount && memo && recipient && isValidLabel) {
             if (memo && recipient && isValidLabel) {
                 // send individual transaction here
-                // txs.push({
-                //     amount,
-                //     memo,
-                //     recipient,
-                // });
-                // upon successful transaction, update issue labels
-                // add paid
-                await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
-                    owner,
-                    repo,
-                    issue_number: issueId,
-                    labels: ['Paid']
-                });
-                // remove Ready to pay
-                await octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}', {
-                    owner,
-                    repo,
-                    issue_number: issueId,
-                    name: 'Ready to pay'
-                });
-                // close the issue
-                await octokit.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
-                    owner,
-                    repo,
-                    issue_number: issueId,
-                    state: 'closed'                    
-                });
+                const amount = 1;
+                // You can use this method to send memos as well
+                try {
+                    await paymentHandler.sendCoins(recipient, amount, memo);
+                    // upon successful transaction, update issue labels
+                    // add paid
+                    await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
+                        owner,
+                        repo,
+                        issue_number: issueId,
+                        labels: ['Paid']
+                    });
+                    // remove Ready to pay
+                    await octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}', {
+                        owner,
+                        repo,
+                        issue_number: issueId,
+                        name: 'Ready to pay'
+                    });
+                    // close the issue
+                    await octokit.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+                        owner,
+                        repo,
+                        issue_number: issueId,
+                        state: 'closed'                    
+                    });
+                } catch(err) {
+                    console.log('Payment or Issue Update Error', err);
+                }
             } else {
                 console.log(`Missing data for: ${title}\n${html_url}\nTransaction Object:`, {
                     amount,
@@ -109,9 +116,6 @@ const axios = require('axios');
                 console.log('--------------------------');
             }
         }
-        console.log('Transaction Data for Bulk Payment:', txs);
-        // send bulk payments to the blockchain
-        // await sendBulkPayments(txs);
     } catch (err) {
         console.log(err);
     }
