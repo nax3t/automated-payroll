@@ -20,7 +20,7 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
     // prepare senders account
     const sendersAccount = new Account(process.env.SIGNING_KEY);
 
-    const valUrl = "http://54.219.183.128";
+    const pvUrl = "http://54.219.183.128";
     const bankFee = 1;
     const validatorFee = 1;
 
@@ -108,7 +108,7 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
       let date = title.match(/\d\d\/\d\d\/\d\d\d\d/);
       date = date ? date[0].replace(/\//g, "_") : false;
       // generate memo
-      const memo = date ? `TESTING_TS_${issueId}_${date}` : false;
+      const memo = date ? `TNB_TS_${issueId}_${date}` : false;
       if (amount >= 10000) {
         console.log(
           paymentMessage(
@@ -123,7 +123,7 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
       } else {
         let totalTxFees = bankFee + validatorFee;
         let { data } = await axios.get(
-          `${valUrl}/accounts/${sendersAccount.accountNumberHex}/balance?format=json`
+          `${pvUrl}/accounts/${sendersAccount.accountNumberHex}/balance?format=json`
         );
         let senderBalance = data.balance;
         if (senderBalance > amount + totalTxFees) {
@@ -196,16 +196,16 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
         } else {
           console.log(
             `Payment not made, low balance!!
-             Type of payment: Timesheet
-             Issue link: ${html_url}
-             Amount: ${amount}
-             Receiver account address: ${recipient}
-             Memo: ${memo}
+    Type of payment: Timesheet
+    Issue link: ${html_url}
+    Amount: ${amount}
+    Receiver account address: ${recipient}
+    Memo: ${memo}
 
-             ------------------------
-             Available Balance: ${senderBalance}
-             Minimum Required Balance: ${amount + totalTxFees}
-             ------------------------`.red
+    ------------------------
+    Available Balance: ${data}
+    Minimum Required Balance: ${amount + totalTxFees}
+    ------------------------`.red
           );
         }
       }
