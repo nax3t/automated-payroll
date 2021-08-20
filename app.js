@@ -20,15 +20,17 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
     // prepare senders account
     const sendersAccount = new Account(process.env.SIGNING_KEY);
 
-    const pvUrl = "http://54.219.183.128";
-    const bankFee = 1;
-    const validatorFee = 1;
-
     const bankUrl = "http://45.33.60.42";
     const paymentHandlerOptions = {
       account: sendersAccount,
       bankUrl: bankUrl,
     };
+    const bank_config_res = await axios.get(`${bankUrl}/config`);
+    let pvUrl = bank_config_res.data.primary_validator.ip_address;
+    let validatorFee =
+      bank_config_res.data.primary_validator.default_transaction_fee;
+    let bankFee = bank_config_res.data.default_transaction_fee;
+
     const paymentHandler = new tnb.AccountPaymentHandler(paymentHandlerOptions);
     // // This is very important.
     // // Method for getting the Bank and Primary validator Transactions fees
@@ -216,7 +218,7 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
 })();
 
 function paymentMessage(success, html_url, amount, recipient, memo, err) {
-  return `Payment ${success ? "succeded" : "failed"}!
+  return `Payment ${success ? "succeeded" : "failed"}!
     Type of payment: Timesheet
     Issue link: ${html_url}
     Amount: ${amount}
