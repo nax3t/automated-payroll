@@ -143,7 +143,7 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
 })();
 
 function paymentMessage(success, html_url, amount, recipient, memo, err) {
-    return `Payment ${ success ? 'succeded' : 'failed' }!
+    return `Payment ${ success ? 'succeeded' : 'failed' }!
     Type of payment: Timesheet
     Issue link: ${html_url}
     Amount: ${amount}
