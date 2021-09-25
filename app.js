@@ -1,5 +1,5 @@
 if (process.env.NODE_EV !== "production") require("dotenv").config();
-const testing = true;
+const testing = process.env.TESTING;
 const octokitCore = require("@octokit/core");
 const { Octokit } = octokitCore;
 const octokit = new Octokit({
@@ -9,18 +9,35 @@ const axios = require("axios");
 const colors = require("colors");
 const tnb = require("thenewboston");
 const { Account } = tnb;
+const cron = require("node-cron");
 const verifiedUsers = [
   22790904, // manishram (Manish)
   77364430, // tspearing (Tristan)
 ];
-if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
+// extend console.log and add discord webhook
+const originalLogger = console.log;
+console.log = async function () {
+  axios.post(process.env.WEBHOOK_URL,
+    {
+      content: Object.values(arguments).join(' ')
+    }).then(res => {
+      originalLogger.apply(this, ['Successfully posted to Discord']);
+    }).catch(err => {
+      originalLogger.apply(this, [`Discord Error: ${err.message}`]);
+    })
+  originalLogger.apply(this, arguments);
+}
+if (testing.toString().toLowerCase() !== false) {
+  console.log('Script running in testing mode');
+  verifiedUsers.push(6356890); //nax3t (Ian) - for testing
+}
 
-(async () => {
+const main = async () => {
   try {
     // prepare senders account
     const sendersAccount = new Account(process.env.SIGNING_KEY);
 
-    const bankUrl = "http://45.33.60.42";
+    const bankUrl = "http://54.183.16.194";
     const paymentHandlerOptions = {
       account: sendersAccount,
       bankUrl: bankUrl,
@@ -215,7 +232,7 @@ if (testing) verifiedUsers.push(6356890); //nax3t (Ian) - for testing
   } catch (err) {
     console.log(err);
   }
-})();
+};
 
 function paymentMessage(success, html_url, amount, recipient, memo, err) {
   return `Payment ${success ? "succeeded" : "failed"}!
@@ -227,3 +244,11 @@ function paymentMessage(success, html_url, amount, recipient, memo, err) {
     ${err ? "Error: " + err : ""}
     ------------------------`;
 }
+
+main();
+// see docs: https://github.com/ncb000gt/node-cron
+// run function once a week on mondays
+// cron.schedule('*/5 * * * * *', () => {
+    // console.log('This runs every 5 seconds');
+    // main();
+// });
