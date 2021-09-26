@@ -28,11 +28,13 @@ console.log = async function () {
   originalLogger.apply(this, arguments);
 }
 if (testing.toString().toLowerCase() !== false) {
-  console.log('Script running in testing mode');
+  console.log('```diff\n' +
+              '- Script running in testing mode\n' +
+              '```');
   verifiedUsers.push(6356890); //nax3t (Ian) - for testing
 }
 
-(async () => {
+const main = async () => {
     try {
         // prepare senders account
         const sendersAccount = new Account(process.env.SIGNING_KEY);
@@ -144,7 +146,8 @@ if (testing.toString().toLowerCase() !== false) {
                         state: 'closed'
                     });
                 } else {
-                    console.log(`Payment not made, missing data for:
+                    console.log(`------------------------
+                    Payment not made, missing data for:
                     Type of payment: Timesheet
                     Issue link: ${html_url}
                     Amount: ${amount}
@@ -157,18 +160,21 @@ if (testing.toString().toLowerCase() !== false) {
     } catch (err) {
         console.log(err);
     }
-})();
+};
 
 
 function paymentMessage(success, html_url, amount, recipient, memo, err) {
-    return `Payment ${ success ? 'succeeded' : 'failed' }!
-    Type of payment: Timesheet
-    Issue link: ${html_url}
-    Amount: ${amount}
-    Receiver account address: ${recipient}
-    Memo: ${memo}
-    ${ err ? 'Error: ' + err : ''}
-    ------------------------`;
+    const color = success ? '+' : '-'; 
+    return `\`\`\`diff
+${color} ------------------------
+${color} Payment ${ success ? 'succeeded' : 'failed' }!
+${color} Type of payment: Timesheet
+${color} Issue link: ${html_url}
+${color} Amount: ${amount}
+${color} Receiver account address: ${recipient}
+${color} Memo: ${memo}
+${color} ${ err ? 'Error: ' + err + '\n- ------------------------' : '------------------------'}
+\`\`\``;
 };
 
 main();
