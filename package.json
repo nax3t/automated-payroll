@@ -12,7 +12,6 @@
   "dependencies": {
     "@octokit/core": "^3.5.1",
     "axios": "^0.21.1",
-    "colors": "^1.4.0",
     "github-api": "^3.4.0",
     "node-cron": "^3.0.0",
     "thenewboston": "^1.1.0-alpha.4"

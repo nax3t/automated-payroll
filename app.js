@@ -6,7 +6,6 @@ const octokit = new Octokit({
     auth: process.env.GH_AUTH_TOKEN,
 });
 const axios = require('axios');
-const colors = require('colors');
 const tnb = require('thenewboston');
 const { Account } = tnb;
 const cron = require("node-cron");
@@ -106,7 +105,7 @@ const main = async () => {
             // generate memo
             const memo = date ? `TNB_TS_${issueId}_${date}` : false;
             if (amount >= 10000) {
-                console.log(paymentMessage(false, html_url, amount, recipient, memo, 'Payment of 10000 TNBC or more!').yellow); 
+                console.log(paymentMessage(false, html_url, amount, recipient, memo, 'Payment of 10000 TNBC or more!')); 
             } else {
                 if (amount && memo && recipient && isValidLabel) {
                     // send individual transaction here
@@ -114,13 +113,13 @@ const main = async () => {
                     try {
                         let res = await paymentHandler.sendCoins(recipient, amount, memo);
                         if (typeof res === 'undefined') {
-                            console.log(paymentMessage(true, html_url, amount, recipient, memo).green);
+                            console.log(paymentMessage(true, html_url, amount, recipient, memo));
                         } else {
-                            console.log(paymentMessage(false, html_url, amount, recipient, memo, err).red);
+                            console.log(paymentMessage(false, html_url, amount, recipient, memo, err));
                             continue;
                         }
                     } catch (err) {
-                        console.log(paymentMessage(false, html_url, amount, recipient, memo, err).red);
+                        console.log(paymentMessage(false, html_url, amount, recipient, memo, err));
                         continue;
                     }
                     // upon successful transaction, update issue labels
@@ -153,7 +152,7 @@ const main = async () => {
                     Amount: ${amount}
                     Receiver account address: ${recipient}
                     Memo: ${memo}
-                    ------------------------`.red);
+                    ------------------------`);
                 }
             }
         }

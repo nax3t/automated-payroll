@@ -6,7 +6,6 @@ const octokit = new Octokit({
     auth: process.env.GH_AUTH_TOKEN,
 });
 const axios = require('axios');
-const colors = require('colors');
 const tnb = require('thenewboston');
 const { Account } = tnb;
 const cron = require("node-cron");
@@ -17,21 +16,22 @@ const verifiedUsers = [
 // extend console.log and add discord webhook
 const originalLogger = console.log;
 console.log = async function () {
-  axios.post(process.env.WEBHOOK_URL,
-    {
-      content: Object.values(arguments).join(' ')
-    }).then(res => {
-      originalLogger.apply(this, ['Successfully posted to Discord']);
-    }).catch(err => {
-      originalLogger.apply(this, [`Discord Error: ${err.message}`]);
-    })
-  originalLogger.apply(this, arguments);
+    try {
+        await axios.post(process.env.WEBHOOK_URL,
+            {
+                content: Object.values(arguments).join(' ')
+            })
+        originalLogger.apply(this, ['Successfully posted to Discord']);
+    } catch (err) {
+        originalLogger.apply(this, [`Discord Error: ${err.message}`]);
+    }
+    originalLogger.apply(this, arguments);
 }
 if (testing.toString().toLowerCase() !== false) {
-  console.log('```diff\n' +
-              '- Script running in testing mode\n' +
-              '```');
-  verifiedUsers.push(6356890); //nax3t (Ian) - for testing
+    console.log('```diff\n' +
+        '- Script running in testing mode\n' +
+        '```');
+    verifiedUsers.push(6356890); //nax3t (Ian) - for testing
 }
 
 const main = async () => {
@@ -57,9 +57,9 @@ const main = async () => {
 
         // get all issues that are labeled as Bounty Payment, Approved, and Ready to pay
         const { data } = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=Bounty%20Payment,%F0%9F%98%8D%20Approved%20%F0%9F%98%8D,Ready%20to%20pay`, {
-			headers: {
-               'Authorization': `token ${process.env.GH_AUTH_TOKEN}` 
-		    }
+            headers: {
+                'Authorization': `token ${process.env.GH_AUTH_TOKEN}`
+            }
         });
         for (const issue of data) {
             // destructure needed properties from issue object
@@ -68,7 +68,7 @@ const main = async () => {
             // check if Ready to pay label added by correct user
             const { data } = await axios.get(events_url, {
                 headers: {
-                'Authorization': `token ${process.env.GH_AUTH_TOKEN}` 
+                    'Authorization': `token ${process.env.GH_AUTH_TOKEN}`
                 }
             });
             const isValidLabel = data.find(action =>
@@ -78,16 +78,16 @@ const main = async () => {
             );
             // if label not added by correct user then skip to next issue
             if (!isValidLabel) {
-                console.log(`Invalid label creator for ${title}, skipping to next bounty payment.`);
-                console.log(events_url);
+                console.log(`2 Invalid label creator for ${title}, skipping to next bounty payment.`);
+                console.log(3, events_url);
                 continue;
             }
             // // parse recipient account number
             const recipients = body.match(/\d+ *- *[a-z0-9]{64} *- *thenewboston-developers\/\w+-*\w*-*\w*-*\w*-*\w*#\d+/g);
             // if no recipients matched then skip to next issue
             if (!recipients) {
-                console.log(`No recipients matched for ${title}, skipping to next bounty payment.`);
-                console.log(events_url);
+                console.log(`4 No recipients matched for ${title}, skipping to next bounty payment.`);
+                console.log(5, events_url);
                 continue;
             }
             let allPaid = true;
@@ -102,7 +102,7 @@ const main = async () => {
                 const memo = issueId && bountyIssueId ? `TNB_BOUNTY_${issueId}_${bountyIssueId}` : false;
                 if (amount && amount >= 10000) {
                     allPaid = false;
-                    console.log(paymentMessage(false, html_url, amount, recipient, memo, 'Payment of 10000 TNBC or more!').yellow); 
+                    console.log(6, paymentMessage(false, html_url, amount, recipient, memo, 'Payment of 10000 TNBC or more!'));
                 } else {
                     if (amount && memo && recipient && isValidLabel) {
                         // send individual transaction here
@@ -110,33 +110,33 @@ const main = async () => {
                         try {
                             let res = await paymentHandler.sendCoins(recipient, amount, memo);
                             if (typeof res === 'undefined') {
-                                console.log(paymentMessage(true, html_url, amount, recipient, memo).green);
+                                console.log(7, paymentMessage(true, html_url, amount, recipient, memo));
                             } else {
                                 allPaid = false;
-                                console.log(paymentMessage(false, html_url, amount, recipient, memo, err).red);
+                                console.log(8, paymentMessage(false, html_url, amount, recipient, memo, err));
                                 continue;
                             }
                         } catch (err) {
                             allPaid = false;
-                            console.log(paymentMessage(false, html_url, amount, recipient, memo, err).red);
+                            console.log(9, paymentMessage(false, html_url, amount, recipient, memo, err));
                             continue;
                         }
                     } else {
                         allPaid = false;
-                        console.log(`------------------------
+                        console.log(`10 ------------------------
                         Payment not made, missing data for:
                         Type of payment: Bounty Payment
                         Issue link: ${html_url}
                         Amount: ${amount}
                         Receiver account address: ${recipient}
                         Memo: ${memo}
-                        ------------------------`.red);
+                        ------------------------`);
                     }
                 }
             }
             // after all transactions are completed, update issue labels
             if (!allPaid) {
-                console.log('Warning: One or more payment not completed, please see logs above.'.red);
+                console.log('11 Warning: One or more payment not completed, please see logs above.');
                 // add requires manual review
                 await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
                     owner,
@@ -158,7 +158,7 @@ const main = async () => {
                     repo,
                     issue_number: issueId,
                     state: 'closed'
-                });           
+                });
             }
             // remove Ready to pay
             await octokit.request('DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}', {
@@ -170,22 +170,22 @@ const main = async () => {
         }
         return;
     } catch (err) {
-        console.log(err);
+        console.log(12, err.message);
     }
 };
 
 
 function paymentMessage(success, html_url, amount, recipient, memo, err) {
-    const color = success ? '+' : '-'; 
+    const color = success ? '+' : '-';
     return `\`\`\`diff
 ${color} ------------------------
-${color} Payment ${ success ? 'succeeded' : 'failed' }!
+${color} Payment ${success ? 'succeeded' : 'failed'}!
 ${color} Type of payment: Bounty Payment
 ${color} Issue link: ${html_url}
 ${color} Amount: ${amount}
 ${color} Receiver account address: ${recipient}
 ${color} Memo: ${memo}
-${color} ${ err ? 'Error: ' + err + '\n- ------------------------' : '------------------------'}
+${color} ${err ? 'Error: ' + err.message + '\n- ------------------------' : '------------------------'}
 \`\`\``;
 };
 
