@@ -1,6 +1,6 @@
-if (process.env.NODE_EV !== "production") require("dotenv").config();
+if (process.env.NODE_EV !== 'production') require('dotenv').config();
 const testing = process.env.TESTING;
-const octokitCore = require("@octokit/core");
+const octokitCore = require('@octokit/core');
 const { Octokit } = octokitCore;
 const octokit = new Octokit({
     auth: process.env.GH_AUTH_TOKEN,
@@ -8,27 +8,22 @@ const octokit = new Octokit({
 const axios = require('axios');
 const tnb = require('thenewboston');
 const { Account } = tnb;
-const cron = require("node-cron");
+const cron = require('node-cron');
 const verifiedUsers = [
     22790904, // manishram (Manish)
     77364430, // tspearing (Tristan)
 ];
 // extend console.log and add discord webhook
-const originalLogger = console.log;
-console.log = async function () {
-    try {
-        await axios.post(process.env.WEBHOOK_URL,
-            {
-                content: Object.values(arguments).join(' ')
-            })
-        originalLogger.apply(this, ['Successfully posted to Discord']);
-    } catch (err) {
-        originalLogger.apply(this, [`Discord Error: ${err.message}`]);
-    }
-    originalLogger.apply(this, arguments);
+const logToDiscord = function () {
+    console.log.apply(this, arguments);
+    return new Promise((resolve, reject) => {
+    axios.post(process.env.WEBHOOK_URL, { content: Object.values(arguments).join(' ')})
+        .then(res=>resolve(res))
+        .catch(err=>reject(err));
+    });
 }
 if (testing.toString().toLowerCase() !== false) {
-    console.log('```diff\n' +
+    logToDiscord('```diff\n' +
         '- Script running in testing mode\n' +
         '```');
     verifiedUsers.push(6356890); //nax3t (Ian) - for testing
@@ -47,23 +42,19 @@ const main = async () => {
         // // This is very important.
         // // Method for getting the Bank and Primary validator Transactions fees
         await paymentHandler.init();
-        // get core-team data
-        const response = await axios.get('https://api.thenewboston.com/core_members');
-        const teamMembers = response.data.results;
-        // initialize empty array for bank transactions
-        const txs = [];
-        const owner = testing ? 'nax3t' : 'thenewboston-developers';
-        const repo = testing ? 'test-timesheets' : 'Contributor-Payments';
 
         // get all issues that are labeled as Bounty Payment, Approved, and Ready to pay
+        const owner = testing ? 'nax3t' : 'thenewboston-developers';
+        const repo = testing ? 'test-timesheets' : 'Contributor-Payments';
         const { data } = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=Bounty%20Payment,%F0%9F%98%8D%20Approved%20%F0%9F%98%8D,Ready%20to%20pay`, {
             headers: {
                 'Authorization': `token ${process.env.GH_AUTH_TOKEN}`
             }
         });
+        // loop over issues
         for (const issue of data) {
             // destructure needed properties from issue object
-            const { body, number, title, user, html_url, events_url } = issue;
+            const { body, number, title, html_url, events_url } = issue;
             const issueId = number;
             // check if Ready to pay label added by correct user
             const { data } = await axios.get(events_url, {
@@ -78,52 +69,58 @@ const main = async () => {
             );
             // if label not added by correct user then skip to next issue
             if (!isValidLabel) {
-                console.log(`2 Invalid label creator for ${title}, skipping to next bounty payment.`);
-                console.log(3, events_url);
+                await logToDiscord(`Invalid label creator for ${title}, skipping to next bounty payment.`, events_url);
                 continue;
             }
-            // // parse recipient account number
+            // get all recipients from issue body
             const recipients = body.match(/\d+ *- *[a-z0-9]{64} *- *thenewboston-developers\/\w+-*\w*-*\w*-*\w*-*\w*#\d+/g);
             // if no recipients matched then skip to next issue
             if (!recipients) {
-                console.log(`4 No recipients matched for ${title}, skipping to next bounty payment.`);
-                console.log(5, events_url);
+                await logToDiscord(`No recipients matched for ${title}, skipping to next bounty payment.`, events_url);
                 continue;
             }
             let allPaid = true;
+            // loop over recipients data
             for (let recipient of recipients) {
+                // extract amount - account no. - bounty issue id
                 recipient = recipient.split('-').map(r => r.trim());
                 const amount = Number(recipient.shift());
                 const accountNo = recipient.shift();
                 const issue = recipient.join('-');
                 const bountyIssueId = Number(issue.split('#').pop());
+                // variable recipient needed to make payment easier
                 recipient = accountNo;
                 // generate memo
                 const memo = issueId && bountyIssueId ? `TNB_BOUNTY_${issueId}_${bountyIssueId}` : false;
+                // if amount is over 10000 TNBC then log message
                 if (amount && amount >= 10000) {
                     allPaid = false;
-                    console.log(6, paymentMessage(false, html_url, amount, recipient, memo, 'Payment of 10000 TNBC or more!'));
+                    await logToDiscord(paymentMessage(false, html_url, amount, recipient, memo, 'Payment of 10000 TNBC or more!'));
                 } else {
+                    // if all needed info is needed to make a payment
                     if (amount && memo && recipient && isValidLabel) {
                         // send individual transaction here
                         // You can use this method to send memos as well
                         try {
                             let res = await paymentHandler.sendCoins(recipient, amount, memo);
                             if (typeof res === 'undefined') {
-                                console.log(7, paymentMessage(true, html_url, amount, recipient, memo));
+                                // payment succeeded
+                                await logToDiscord(paymentMessage(true, html_url, amount, recipient, memo));
                             } else {
+                                // payment failed
                                 allPaid = false;
-                                console.log(8, paymentMessage(false, html_url, amount, recipient, memo, err));
+                                await logToDiscord(paymentMessage(false, html_url, amount, recipient, memo, err));
                                 continue;
                             }
                         } catch (err) {
+                            // payment failed
                             allPaid = false;
-                            console.log(9, paymentMessage(false, html_url, amount, recipient, memo, err));
+                            await logToDiscord(paymentMessage(false, html_url, amount, recipient, memo, err));
                             continue;
                         }
                     } else {
                         allPaid = false;
-                        console.log(`10 ------------------------
+                        await logToDiscord(`------------------------
                         Payment not made, missing data for:
                         Type of payment: Bounty Payment
                         Issue link: ${html_url}
@@ -136,8 +133,8 @@ const main = async () => {
             }
             // after all transactions are completed, update issue labels
             if (!allPaid) {
-                console.log('11 Warning: One or more payment not completed, please see logs above.');
-                // add requires manual review
+                // if any payment failed or was skipped then add requires manual review label
+                await logToDiscord('Warning: One or more payments not completed, please see logs above.');
                 await octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/labels', {
                     owner,
                     repo,
@@ -170,7 +167,7 @@ const main = async () => {
         }
         return;
     } catch (err) {
-        console.log(12, err.message);
+        await logToDiscord(err.message);
     }
 };
 
