@@ -90,9 +90,7 @@ const main = async () => {
             totalTimeSpent = totalTimeSpent ? totalTimeSpent.match(/\.?\d+\.?(0|5)?/)[0] : 0;
             // pull username and match from teamMembers to pull hourly rate
             const member = teamMembers.find(member => {
-                if (member.user.github_username === user.login ||
-                    title.toLowerCase().includes(member.user.display_name.toLowerCase()) ||
-                    member.user.account_number === recipient) {
+                if (member.user.github_username === user.login) {
                     return member;
                 }
             });
