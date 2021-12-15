@@ -1,4 +1,16 @@
 if (process.env.NODE_EV !== "production") require("dotenv").config();
+// process date range argument
+if (!process.argv[2]) {
+    console.log('Please add a date range to the end of your node app.js command\nin the following format: dd/mm/yyyy-dd/mm/yyyy (no spaces, must be exact)');
+    return;
+}
+const dateRange = process.argv[2];
+const dates = dateRange.split('-');
+let [d,M,y] = dates[0].split('/');
+let [d1,M1,y1] = dates[1].split('/');
+const startDate = new Date(y,parseInt(M)-1,d);
+const endDate = new Date(y1,parseInt(M1)-1,d1);
+
 const testing = process.env.TESTING;
 const octokitCore = require("@octokit/core");
 const { Octokit } = octokitCore;
@@ -55,10 +67,24 @@ const main = async () => {
         const repo = testing ? 'test-timesheets' : 'Contributor-Payments';
 
         // get all issues that are labeled as Timesheets, Approved, and Ready to pay
-        const { data } = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=Timesheet,%F0%9F%98%8D%20Approved%20%F0%9F%98%8D,Ready%20to%20pay`, {
+        let { data } = await axios.get(`https://api.github.com/repos/${owner}/${repo}/issues?state=open&labels=Timesheet,%F0%9F%98%8D%20Approved%20%F0%9F%98%8D,Ready%20to%20pay`, {
 			headers: {
                'Authorization': `token ${process.env.GH_AUTH_TOKEN}` 
 		}});
+
+        // filter results by date
+        data = data.filter(d => {
+            // parse date from issue title
+            const {title} = d;
+            let titleDate = title.split('-')[1].trim()
+            let [d3,M3,y3] = titleDate.split('/');
+            titleDate = new Date(y3,parseInt(M3)-1,d3);
+            // check if date is within specified date range
+            if(titleDate >= startDate && titleDate <= endDate) {
+                return d;
+            }
+        });
+
         for (const issue of data) {
             // destructure needed properties from issue object
             const { body, number, title, user, html_url, events_url } = issue;
